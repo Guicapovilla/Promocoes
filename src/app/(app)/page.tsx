@@ -7,7 +7,7 @@ import { EconomyCard } from "@/components/economy-card";
 import { VideoBanner } from "@/components/video-banner";
 import { getCatalog, getEvents, getGames, getRadar } from "@/lib/data";
 import { fmt, fmtUpdated } from "@/lib/format";
-import { autoTarget, isYearLow, markerPos, stats } from "@/lib/pricing";
+import { autoTarget, hasHistory, isYearLow, markerPos, stats } from "@/lib/pricing";
 
 export default async function PromoPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const { p: slug } = await searchParams;
@@ -27,11 +27,12 @@ export default async function PromoPage({ searchParams }: { searchParams: Promis
     return { x, st, yearLow: isYearLow(x.series) };
   });
   // destaque: o produto pedido ou, por padrão, a maior queda vs. a média de 6 meses
-  const byPct = [...rows].sort((a, b) => a.st.pct - b.st.pct);
+  const seasoned = rows.filter((r) => hasHistory(r.x.series)); // média só vale com histórico suficiente
+  const byPct = [...(seasoned.length ? seasoned : rows)].sort((a, b) => a.st.pct - b.st.pct);
   const sel = rows.find((r) => r.x.slug === slug) ?? byPct[0];
 
   const deals: Deal[] = rows
-    .filter((r) => r.st.tone !== "danger" && r.x.id !== sel.x.id)
+    .filter((r) => hasHistory(r.x.series) && r.st.tone !== "danger" && r.x.id !== sel.x.id)
     .map(({ x, st, yearLow }) => ({
       id: x.id, slug: x.slug, name: x.name, store: x.store, price: x.price, tone: st.tone, pct: st.pct,
       pos: markerPos(x.price, st.min, st.max, 4, 96), yearLow, rec: !!x.rec_note, imageUrl: x.image_url,
@@ -43,8 +44,8 @@ export default async function PromoPage({ searchParams }: { searchParams: Promis
     const r = radarBy.get(x.id);
     return r && x.price <= (r.target_price ?? autoTarget(st.avg));
   });
-  const lows = rows.filter((r) => r.yearLow);
-  const drops = rows.filter(({ x }) => x.series.length > 1 && x.price < x.series[x.series.length - 2].price);
+  const lows = seasoned.filter((r) => r.yearLow);
+  const drops = seasoned.filter(({ x }) => x.series.length > 1 && x.price < x.series[x.series.length - 2].price);
   const short = (list: typeof rows) =>
     list.length ? list.slice(0, 2).map((r) => r.x.name).join(", ") + (list.length > 2 ? ` e mais ${list.length - 2}` : "") : "Nenhum hoje";
   const daily = [

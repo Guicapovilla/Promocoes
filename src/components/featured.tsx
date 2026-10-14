@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ddmm, fmt, fmtK } from "@/lib/format";
-import { DEFAULT_RANGE, forecastText, isYearLow, lowSince, markerPos, pctLabel, RANGES, stats, TONES, type PricePoint, type RangeKey } from "@/lib/pricing";
+import { DEFAULT_RANGE, forecastText, hasHistory, isYearLow, lowSince, markerPos, MIN_HISTORY_DAYS, pctLabel, RANGES, stats, TONES, type PricePoint, type RangeKey } from "@/lib/pricing";
 import { readRecent, type Recent } from "@/lib/recent";
 import { PickLink } from "./pick-link";
 import { useUi } from "./ui-provider";
@@ -119,6 +119,11 @@ export function Featured({ p, catalog, event }: { p: FeaturedProduct; catalog: C
               <div><span className="muted" style={{ font: "var(--text-body-sm)" }}>Vs. média</span><b style={{ color: T.ink }}>{pctLabel(s.pct)}</b></div>
               <div><span className="muted" style={{ font: "var(--text-body-sm)" }}>Menor desde</span><b>{lowSince(p.series)}</b></div>
             </div>
+            {!hasHistory(p.series) && (
+              <p className="muted" style={{ font: "var(--text-body-sm)", marginTop: 12 }}>
+                Produto novo no monitoramento: {p.series.length} {p.series.length === 1 ? "dia" : "dias"} de histórico. A média fica confiável a partir de {MIN_HISTORY_DAYS} dias.
+              </p>
+            )}
           </div>
         </div>
 

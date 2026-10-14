@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { fmt } from "@/lib/format";
+import { pctLabel, TONES, MIN_HISTORY_DAYS } from "@/lib/pricing";
 import { SearchIcon } from "./icons";
 import { PickLink } from "./pick-link";
 import { useUi } from "./ui-provider";
 
 type Item = { id: string; slug: string; name: string; price: number };
-type Remote = Item & { store: string; stores: number };
+type Remote = Item & { store: string; stores: number; days: number; avg: number | null; pct: number | null; tone: "success" | "warning" | "danger" | null };
 
 export function SearchBox({ items }: { items: Item[] }) {
   const [query, setQuery] = useState("");
@@ -36,7 +37,7 @@ export function SearchBox({ items }: { items: Item[] }) {
   }, [q]);
 
   const seen = new Set(local.map((x) => x.id));
-  const found: (Item & { store?: string; stores?: number })[] = [...local, ...remote.filter((x) => !seen.has(x.id))];
+  const found: (Item & Partial<Remote>)[] = [...local, ...remote.filter((x) => !seen.has(x.id))];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,7 +75,14 @@ export function SearchBox({ items }: { items: Item[] }) {
               style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-sm)", color: "var(--text-primary)" }}
               className="list-row">
               <span>{x.name}</span>
-              <span className="muted">{x.store ? `${x.store}${x.stores && x.stores > 1 ? ` +${x.stores - 1}` : ""} · ` : ""}{fmt(x.price)}</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, whiteSpace: "nowrap" }}>
+                <span className="muted">{x.store ? `${x.store}${x.stores && x.stores > 1 ? ` +${x.stores - 1}` : ""} · ` : ""}{fmt(x.price)}</span>
+                {x.avg != null && x.pct != null && x.tone ? (
+                  <span style={{ font: "12px/1.4 var(--font-body)", color: TONES[x.tone].ink }}>média {fmt(x.avg)} · {pctLabel(x.pct)}</span>
+                ) : x.days != null ? (
+                  <span className="muted" style={{ font: "12px/1.4 var(--font-body)" }}>novo · {x.days} {x.days === 1 ? "dia" : "dias"} de histórico (média a partir de {MIN_HISTORY_DAYS})</span>
+                ) : null}
+              </span>
             </PickLink>
           ))}
         </div>

@@ -18,6 +18,10 @@ export const TONES: Record<Tone, { ink: string; tint: string; dot: string; bubbl
   danger: { ink: "#b01d31", tint: "rgba(255,92,108,0.14)", dot: "#d1233a", bubble: "#d1233a", verdict: "Caro agora", text: "está caro." },
 };
 
+/** Abaixo disso a média ainda não diz nada (produto recém-descoberto tem 1 dia de histórico). */
+export const MIN_HISTORY_DAYS = 7;
+export const hasHistory = (series: PricePoint[]) => series.length >= MIN_HISTORY_DAYS;
+
 /** pct ≤ −5 → verde; −5 < pct ≤ 3 → amarelo; pct > 3 → vermelho. */
 export const classify = (pct: number): Tone => (pct <= -5 ? "success" : pct <= 3 ? "warning" : "danger");
 

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getProfile } from "@/lib/data";
 import { liveSearch } from "@/lib/ingest/discover";
 import { tokens } from "@/lib/ingest/normalize";
+import { classify, hasHistory, pctVsAvg } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
@@ -29,10 +30,25 @@ export async function GET(request: NextRequest) {
   for (const w of words) query = query.ilike("name", `%${w}%`);
   const { data } = await query.limit(40);
 
+  // média dos últimos 6 meses (mesma regra da home): histórico diário do menor preço
+  const ids = (data ?? []).map((p: any) => p.id);
+  const since = new Date(Date.now() - 180 * 86_400_000).toLocaleDateString("sv-SE");
+  const { data: hist } = ids.length
+    ? await supabase.from("price_history").select("product_id, min_price").in("product_id", ids).gte("date", since).limit(20000)
+    : { data: [] as { product_id: string; min_price: number }[] };
+  const series = new Map<string, number[]>();
+  for (const h of hist ?? []) series.set(h.product_id, [...(series.get(h.product_id) ?? []), Number(h.min_price)]);
+
   const results = (data ?? [])
     .map((p: any) => {
       const offers = [...(p.offers ?? [])].sort((a: any, b: any) => a.price - b.price);
-      return offers.length ? { id: p.id, slug: p.slug, name: p.name, image_url: p.image_url, price: Number(offers[0].price), store: offers[0].store, stores: offers.length } : null;
+      if (!offers.length) return null;
+      const price = Number(offers[0].price);
+      const prices = series.get(p.id) ?? [];
+      const days = prices.length;
+      const avg = days ? prices.reduce((a, b) => a + b, 0) / days : null;
+      const pct = avg && hasHistory(prices.map((x) => ({ date: "", price: x }))) ? pctVsAvg(price, avg) : null;
+      return { id: p.id, slug: p.slug, name: p.name, image_url: p.image_url, price, store: offers[0].store, stores: offers.length, days, avg, pct, tone: pct == null ? null : classify(pct) };
     })
     .filter(Boolean)
     .sort((a: any, b: any) => a.price - b.price)
