@@ -29,7 +29,7 @@ npm run typecheck
 | `src/app/(app)/` | Promoções (`/`), Meu radar, Jogos, Serviços, Admin de serviços. O layout aplica o gate de apoiador |
 | `src/components/` | Nav, destaque + gráfico, radar, modais (Configurações, Economia), toasts, ajuda/sugestões |
 | `src/lib/pricing.ts` | Média, classificação verde/amarelo/vermelho, menor do ano, alvo do radar, previsão, ordenação |
-| `src/lib/ingest/` | Coleta de preços: providers `mercadolivre`, `feed` (Awin/Lomadee, CSV/JSON), `amazon` (esqueleto) |
+| `src/lib/ingest/` | Coleta de preços: providers `shopee` (Affiliate Open API), `amazon` (Creators API), `feed` (Awin/Lomadee, CSV/JSON; Casas Bahia etc.), `mercadolivre` |
 | `src/lib/notify/run.ts` | Avalia o radar → aviso no site (Realtime), Web Push, e-mail (Resend), WhatsApp (Z-API) |
 | `src/app/api/cron/*` | `prices` (coleta + avisos), `notify`, `games` (feed Eneba), protegidos por `CRON_SECRET` |
 | `src/app/api/webhooks/*` | `supporter` (flag `is_supporter`), `affiliate` (postback → `purchases`) |
@@ -59,7 +59,8 @@ npm run typecheck
 ## Limites e premissas (leia antes de ir ao ar)
 
 - **Não foi testado contra um Supabase real nem com APIs externas.** Validado: build, typecheck, testes unitários, migração + seed + RLS em um Postgres 16 local (com stub do schema `auth`) e a página de login no navegador. As telas logadas não foram vistas rodando; revise visualmente.
-- **Amazon PA-API não está implementado** (exige SigV4 + conta aprovada); o provider é um esqueleto. Mercado Livre e feeds de afiliado estão implementados, mas dependem de `offers.source`/`external_id` preenchidos.
+- **Shopee e Amazon (Creators API)** foram implementados a partir da documentação, mas **não foram testados contra as APIs reais** (só assinatura/parsing em testes unitários). A Amazon exige conta Associates com vendas qualificadas e credenciais Creators API; a PA-API 5.0 foi descontinuada.
+- **Como cadastrar ofertas**: em `offers`, use `source = 'shopee'` (`external_id` = itemId), `source = 'amazon'` (`external_id` = ASIN) ou `source = 'feed'` com `store = 'Casas Bahia'` (`external_id` = SKU do feed, variável `PRICE_FEED_CASASBAHIA_URL`). Mercado Livre e feeds dependem de `offers.source`/`external_id` preenchidos.
 - **Feed da Eneba**: o parser aceita nomes de coluna comuns, mas o layout real depende do programa; ajuste `src/lib/eneba.ts`.
 - **Apoia.se/Catarse/etc.**: cada plataforma tem seu formato de webhook; o endpoint aceita um formato genérico.
 - Datas em `events` e quedas em `event_drops` são cadastradas à mão (Table Editor). Fotos/capas/logos vêm de `image_url`/`cover_url`/`logo_url`; sem elas aparece o placeholder listrado do design.
