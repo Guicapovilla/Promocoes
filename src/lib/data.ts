@@ -1,0 +1,125 @@
+import { cache } from "react";
+import { createClient } from "./supabase/server";
+import { daysBetween, todayISO } from "./format";
+import type { AppNotification, Game, Product, Profile, PromoEvent, Purchase, RadarItem, Service } from "./types";
+
+const num = (v: unknown) => Number(v);
+
+export const getUser = cache(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  return data.user;
+});
+
+export const getProfile = cache(async (): Promise<Profile | null> => {
+  const user = await getUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+  return (data as Profile) ?? null;
+});
+
+/** Catálogo com ofertas e 365 dias de histórico. O RLS devolve vazio para quem não é apoiador. */
+export const getCatalog = cache(async (): Promise<{ products: Product[]; updatedAt: Date | null }> => {
+  const supabase = await createClient();
+  const since = new Date(Date.now() - 365 * 86_400_000).toLocaleDateString("sv-SE");
+  const [prods, offers, hist] = await Promise.all([
+    supabase.from("products").select("*").eq("active", true),
+    supabase.from("offers").select("id, product_id, store, price, fetched_at"),
+    supabase.from("price_history").select("product_id, date, min_price").gte("date", since).order("date").limit(20000),
+  ]);
+
+  const offersBy = new Map<string, Product["offers"]>();
+  let updatedAt: Date | null = null;
+  for (const o of offers.data ?? []) {
+    const list = offersBy.get(o.product_id) ?? [];
+    list.push({ id: o.id, store: o.store, price: num(o.price), fetched_at: o.fetched_at });
+    offersBy.set(o.product_id, list);
+    const t = new Date(o.fetched_at);
+    if (!updatedAt || t > updatedAt) updatedAt = t;
+  }
+  const histBy = new Map<string, Product["series"]>();
+  for (const h of hist.data ?? []) {
+    const list = histBy.get(h.product_id) ?? [];
+    list.push({ date: h.date, price: num(h.min_price) });
+    histBy.set(h.product_id, list);
+  }
+
+  const products: Product[] = [];
+  for (const p of prods.data ?? []) {
+    const offs = (offersBy.get(p.id) ?? []).sort((a, b) => a.price - b.price);
+    const series = histBy.get(p.id) ?? [];
+    if (!offs.length || !series.length) continue;
+    // o último ponto da série reflete a oferta mais barata de agora
+    const today = todayISO();
+    const last = series[series.length - 1];
+    if (last.date === today) last.price = offs[0].price;
+    else series.push({ date: today, price: offs[0].price });
+    products.push({
+      ...p,
+      rating: num(p.rating),
+      offers: offs,
+      series,
+      price: offs[0].price,
+      store: offs[0].store,
+      offerId: offs[0].id,
+    });
+  }
+  return { products, updatedAt };
+});
+
+export async function getRadar(): Promise<RadarItem[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("radar").select("product_id, notify, target_price").order("created_at");
+  return (data ?? []).map((r) => ({ ...r, target_price: r.target_price == null ? null : num(r.target_price) }));
+}
+
+export async function getPurchases(): Promise<Purchase[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("purchases").select("id, name, paid, avg_at_purchase, date").order("date", { ascending: false });
+  return (data ?? []).map((p) => ({ ...p, paid: num(p.paid), avg_at_purchase: num(p.avg_at_purchase) }));
+}
+
+export async function getGames(): Promise<Game[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("games").select("*").gt("discount_pct", 0);
+  return (data ?? []).map((g) => ({ ...g, price: num(g.price), original_price: num(g.original_price), rating: num(g.rating) }));
+}
+
+export async function getServices(): Promise<Service[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("services").select("*").eq("active", true).order("sort");
+  return (data ?? []).map((s) => ({ ...s, price_from: num(s.price_from) }));
+}
+
+export async function getEvents(): Promise<PromoEvent[]> {
+  const supabase = await createClient();
+  const today = todayISO();
+  const { data } = await supabase
+    .from("events")
+    .select("id, name, date, event_drops(drop_pct, products(name))")
+    .gte("date", today)
+    .order("date")
+    .limit(4);
+  return (data ?? []).map((e: any) => ({
+    id: e.id,
+    name: e.name,
+    date: e.date.slice(8, 10) + "/" + e.date.slice(5, 7),
+    days: daysBetween(today, e.date),
+    items: (e.event_drops ?? [])
+      .map((d: any) => ({ name: d.products?.name ?? "", drop: d.drop_pct }))
+      .sort((a: any, b: any) => b.drop - a.drop)
+      .slice(0, 3),
+  }));
+}
+
+export async function getNotifications(): Promise<AppNotification[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("notifications")
+    .select("id, title, body, product_id, created_at")
+    .is("read_at", null)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  return data ?? [];
+}

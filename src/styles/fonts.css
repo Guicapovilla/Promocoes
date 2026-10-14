@@ -1,0 +1,20 @@
+/* Fonts — Bebas Neue (display, condensed bold — matches the channel's thumbnail
+   lettering) + Inter (body/UI, variable weight). Both are Google Fonts
+   substitutes; no brand font files were provided. See readme.md > VISUAL
+   FOUNDATIONS for the flag. */
+
+@font-face {
+  font-family: "Bebas Neue";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/BebasNeue-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/Inter-Variable.woff2") format("woff2");
+}
