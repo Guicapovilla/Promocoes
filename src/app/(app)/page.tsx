@@ -11,7 +11,7 @@ import { autoTarget, isYearLow, markerPos, stats } from "@/lib/pricing";
 
 export default async function PromoPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const { p: slug } = await searchParams;
-  const [{ products, updatedAt }, radar, events, games] = await Promise.all([getCatalog(), getRadar(), getEvents(), getGames()]);
+  const [{ products, updatedAt }, radar, events, games] = await Promise.all([getCatalog(slug), getRadar(), getEvents(), getGames()]);
 
   if (products.length === 0) {
     return (

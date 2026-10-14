@@ -33,5 +33,7 @@ export async function ingestPrices() {
   }
   const { data: days, error: rpcErr } = await db.rpc("record_daily_min");
   if (rpcErr) errors.push(`record_daily_min: ${rpcErr.message}`);
+  const { error: offErr } = await db.rpc("record_offer_prices");
+  if (offErr) errors.push(`record_offer_prices: ${offErr.message}`);
   return { offers: offers.length, updated, history_rows: days ?? 0, errors };
 }

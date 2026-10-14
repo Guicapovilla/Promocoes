@@ -19,15 +19,48 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   return (data as Profile) ?? null;
 });
 
-/** Catálogo com ofertas e 365 dias de histórico. O RLS devolve vazio para quem não é apoiador. */
-export const getCatalog = cache(async (): Promise<{ products: Product[]; updatedAt: Date | null }> => {
+const CATALOG_CAP = 300;
+
+/** Lê todas as páginas de uma consulta (o PostgREST corta em 1000 linhas por resposta). */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; from < 200_000; from += 1000) {
+    const { data } = await page(from, from + 999);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+/**
+ * Catálogo com ofertas e 365 dias de histórico. O RLS devolve vazio para quem não é apoiador.
+ * Como a descoberta automática faz o catálogo crescer, a home carrega os {CATALOG_CAP} mais populares
+ * (mais o produto pedido por `slug`, mesmo fora do teto).
+ */
+export const getCatalog = cache(async (slug?: string): Promise<{ products: Product[]; updatedAt: Date | null }> => {
   const supabase = await createClient();
   const since = new Date(Date.now() - 365 * 86_400_000).toLocaleDateString("sv-SE");
-  const [prods, offers, hist] = await Promise.all([
-    supabase.from("products").select("*").eq("active", true),
-    supabase.from("offers").select("id, product_id, store, price, fetched_at"),
-    supabase.from("price_history").select("product_id, date, min_price").gte("date", since).order("date").limit(20000),
+  const { data: top } = await supabase.from("products").select("*").eq("active", true).order("popularity", { ascending: false }).order("created_at", { ascending: false }).limit(CATALOG_CAP);
+  const prodRows = [...(top ?? [])];
+  if (slug && !prodRows.some((p) => p.slug === slug)) {
+    const { data: extra } = await supabase.from("products").select("*").eq("active", true).eq("slug", slug).maybeSingle();
+    if (extra) prodRows.push(extra);
+  }
+  // produtos do radar do usuário sempre entram, mesmo fora do teto
+  const { data: mine } = await supabase.from("radar").select("product_id");
+  const missing = (mine ?? []).map((r) => r.product_id).filter((id) => !prodRows.some((p) => p.id === id));
+  if (missing.length) {
+    const { data: extra } = await supabase.from("products").select("*").eq("active", true).in("id", missing);
+    prodRows.push(...(extra ?? []));
+  }
+  const ids = prodRows.map((p) => p.id);
+  const [offerRows, histRows] = await Promise.all([
+    fetchAll((a, b) => supabase.from("offers").select("id, product_id, store, price, fetched_at").in("product_id", ids).range(a, b)),
+    fetchAll((a, b) => supabase.from("price_history").select("product_id, date, min_price").in("product_id", ids).gte("date", since).order("date").range(a, b)),
   ]);
+  const prods = { data: prodRows };
+  const offers = { data: offerRows };
+  const hist = { data: histRows };
 
   const offersBy = new Map<string, Product["offers"]>();
   let updatedAt: Date | null = null;

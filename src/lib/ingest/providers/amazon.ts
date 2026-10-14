@@ -1,4 +1,5 @@
 import type { PriceProvider } from "../types";
+import type { Hit } from "../normalize";
 
 /**
  * Amazon Creators API (substitui a PA-API 5.0, descontinuada). `external_id` = ASIN.
@@ -40,6 +41,39 @@ async function accessToken(id: string, secret: string): Promise<string> {
   const body = (await res.json()) as { access_token: string; expires_in: number };
   cached = { token: body.access_token, exp: Date.now() + body.expires_in * 1000 };
   return body.access_token;
+}
+
+/** Busca por palavra-chave (SearchItems). `detailPageURL` já vem com a sua tag de afiliado. Sem credenciais, devolve []. */
+export async function amazonSearch(keywords: string, limit = 10): Promise<Hit[]> {
+  const id = process.env.AMAZON_CREDENTIAL_ID;
+  const secret = process.env.AMAZON_CREDENTIAL_SECRET;
+  const tag = process.env.AMAZON_PARTNER_TAG;
+  if (!id || !secret || !tag) return [];
+  const token = await accessToken(id, secret);
+  const res = await fetch(API.replace("getItems", "searchItems"), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "x-marketplace": MARKETPLACE },
+    body: JSON.stringify({
+      keywords,
+      itemCount: Math.min(limit, 10),
+      marketplace: MARKETPLACE,
+      partnerTag: tag,
+      resources: ["itemInfo.title", "images.primary.medium", "offersV2.listings.price", "offersV2.listings.availability", "offersV2.listings.condition", "offersV2.listings.isBuyBoxWinner"],
+    }),
+  });
+  if (!res.ok) throw new Error(`searchItems Amazon HTTP ${res.status}`);
+  const body = (await res.json()) as {
+    searchResult?: { items?: { asin: string; detailPageURL?: string; itemInfo?: { title?: { displayValue?: string } }; images?: { primary?: { medium?: { url?: string } } }; offersV2?: { listings?: Listing[] } | null }[] };
+    itemsResult?: { items?: unknown[] };
+  };
+  const hits: Hit[] = [];
+  for (const it of body.searchResult?.items ?? []) {
+    const price = pickAmazonPrice(it.offersV2?.listings);
+    const title = it.itemInfo?.title?.displayValue;
+    if (!price || !title || !it.detailPageURL) continue;
+    hits.push({ store: "Amazon", source: "amazon", externalId: it.asin, title, price, imageUrl: it.images?.primary?.medium?.url ?? null, url: it.detailPageURL });
+  }
+  return hits;
 }
 
 export const amazon: PriceProvider = {

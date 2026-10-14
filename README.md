@@ -46,6 +46,18 @@ npm run typecheck
 - **Visto por último**: `localStorage`, com o preço no momento da visualização.
 - **Economia**: soma de `avg_at_purchase − paid` das compras registradas pelo postback do afiliado (idempotente por `order_id`).
 
+## Descoberta automática e busca
+
+Além de atualizar o preço das ofertas cadastradas, o sistema **encontra produtos sozinho**:
+
+- `watchlist` (tabela, editável no Supabase) define o que monitorar: termo, apelidos, faixa de preço e palavras que eliminam o anúncio (acessórios). A migração `20260201000000_discovery.sql` já traz uma lista inicial de videogames (Switch, PS5, Xbox, Steam Deck, ROG Ally, Quest, controles).
+- `/api/cron/discover` (06:15 e 18:15 UTC) busca cada termo na Shopee e na Amazon, lê o catálogo dos feeds (`PRICE_FEED_<LOJA>_URL`), filtra pelas regras e grava produto + oferta com o link de afiliado. Depois fecha o dia (`price_history` e `offer_prices`) e remove ofertas automáticas sem preço novo há 7 dias.
+- O mesmo anúncio em lojas diferentes vira um produto só quando o título normalizado coincide (`products.match_key`) ou o EAN do feed bate.
+- **Busca do dashboard** (`/api/search`): ao digitar (3+ letras), consulta Shopee/Amazon na hora (cache de 30 min por termo, teto `LIVE_SEARCH_PER_HOUR`), grava o que achou como produto monitorado e responde com o catálogo. Tudo que aparece numa busca passa a ter histórico a partir daquele dia.
+- A home carrega os 300 produtos mais populares (mais o produto pedido e os do seu radar); a busca alcança o resto.
+
+Limites: não existe histórico retroativo (o histórico de cada produto começa quando ele entra no sistema); o link da Shopee carrega o seu ID, mas a atribuição por usuário (`subid`) não é repassada pela Shopee; o casamento entre lojas por título é aproximado.
+
 ## Produção (Vercel)
 
 1. Importe o repositório e configure as variáveis do `.env.example`.

@@ -7,13 +7,36 @@ import { PickLink } from "./pick-link";
 import { useUi } from "./ui-provider";
 
 type Item = { id: string; slug: string; name: string; price: number };
+type Remote = Item & { store: string; stores: number };
 
 export function SearchBox({ items }: { items: Item[] }) {
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLInputElement>(null);
   const { openHelp } = useUi();
   const q = query.trim().toLowerCase();
-  const found = q ? items.filter((x) => x.name.toLowerCase().includes(q)) : [];
+  const words = q.split(/\s+/).filter(Boolean);
+  const local = q ? items.filter((x) => words.every((w) => x.name.toLowerCase().includes(w))) : [];
+  const [remote, setRemote] = useState<Remote[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // busca nas lojas (servidor consulta Shopee/Amazon e o catálogo monitorado), com debounce
+  useEffect(() => {
+    if (q.length < 3) { setRemote([]); setLoading(false); return; }
+    setLoading(true);
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        const body = res.ok ? await res.json() : { results: [] };
+        setRemote(body.results ?? []);
+      } catch { /* cancelada ou sem rede: fica o resultado local */ }
+      if (!ctrl.signal.aborted) setLoading(false);
+    }, 400);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [q]);
+
+  const seen = new Set(local.map((x) => x.id));
+  const found: (Item & { store?: string; stores?: number })[] = [...local, ...remote.filter((x) => !seen.has(x.id))];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,12 +74,17 @@ export function SearchBox({ items }: { items: Item[] }) {
               style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-sm)", color: "var(--text-primary)" }}
               className="list-row">
               <span>{x.name}</span>
-              <span className="muted">{fmt(x.price)}</span>
+              <span className="muted">{x.store ? `${x.store}${x.stores && x.stores > 1 ? ` +${x.stores - 1}` : ""} · ` : ""}{fmt(x.price)}</span>
             </PickLink>
           ))}
         </div>
       )}
-      {q && found.length === 0 && (
+      {q && loading && found.length === 0 && (
+        <div className="dropdown suggest" style={{ padding: 16 }}>
+          <span className="secondary" style={{ font: "14px/1.4 var(--font-body)" }}>Buscando nas lojas…</span>
+        </div>
+      )}
+      {q && !loading && found.length === 0 && (
         <div className="dropdown suggest" style={{ padding: 16, gap: 10 }}>
           <span className="secondary" style={{ font: "14px/1.4 var(--font-body)" }}>Nenhum produto encontrado para “{query}”.</span>
           <button
