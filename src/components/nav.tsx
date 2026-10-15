@@ -77,7 +77,10 @@ export function Nav({ profile }: { profile: Profile }) {
                   <button className="menu-item" onClick={() => { setOpen(false); openSettings(); }}>Configurações</button>
                   <a className="menu-item" style={{ color: "var(--text-primary)" }} href={process.env.NEXT_PUBLIC_MANAGE_SUPPORT_URL || "#"} target="_blank" rel="noreferrer">Gerenciar apoio</a>
                   {profile.is_admin && (
-                    <button className="menu-item" onClick={() => { setOpen(false); router.push("/admin/servicos"); }}>Admin · serviços</button>
+                    <>
+                      <button className="menu-item" onClick={() => { setOpen(false); router.push("/admin/ofertas"); }}>Admin · produtos e links</button>
+                      <button className="menu-item" onClick={() => { setOpen(false); router.push("/admin/servicos"); }}>Admin · serviços</button>
+                    </>
                   )}
                   <form action={signOut}>
                     <button className="menu-item" style={{ width: "100%", borderTop: "1px solid var(--border-subtle)", borderRadius: 0, marginTop: 4, padding: 12, color: "var(--text-muted)" }}>Sair</button>

@@ -27,3 +27,36 @@ export function withUtm(url: string, campaign: string): string {
     return url;
   }
 }
+
+export type Program = { append_params: string | null; link_template: string | null } | null;
+
+/**
+ * Link final do clique. Ordem de prioridade:
+ *  1) link manual da oferta (override);
+ *  2) modelo completo do programa ({url}, {url_encoded}, {external_id}, {subid});
+ *  3) endereço do produto + parâmetros do programa (ex.: tag=seucodigo-20);
+ *  4) endereço do produto sem alteração.
+ */
+export function resolveAffiliateUrl(
+  offer: { url_affiliate: string | null; product_url: string | null; external_id: string | null },
+  program: Program,
+  userId: string,
+  productId: string,
+): string | null {
+  const sub = makeSubId(userId, productId);
+  if (offer.url_affiliate) return buildAffiliateUrl(offer.url_affiliate, userId, productId);
+  if (!offer.product_url) return null;
+  if (program?.link_template) {
+    return program.link_template
+      .replaceAll("{url_encoded}", encodeURIComponent(offer.product_url))
+      .replaceAll("{url}", offer.product_url)
+      .replaceAll("{external_id}", offer.external_id ?? "")
+      .replaceAll("{subid}", encodeURIComponent(sub));
+  }
+  if (program?.append_params) {
+    const u = new URL(offer.product_url);
+    new URLSearchParams(program.append_params.replace(/^[?&]/, "")).forEach((v, k) => u.searchParams.set(k, v));
+    return u.toString();
+  }
+  return offer.product_url;
+}

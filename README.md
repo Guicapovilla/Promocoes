@@ -1,5 +1,7 @@
 # Central de Promoções · Capovilla
 
+> **Não é programador?** Siga o [GUIA-PASSO-A-PASSO.md](GUIA-PASSO-A-PASSO.md).
+
 Next.js 15 (App Router, TypeScript) + Supabase (Auth, Postgres, Realtime). Recria o handoff de design
 `design_handoff_central_promocoes` (alta fidelidade) seguindo a ordem de implementação sugerida.
 
