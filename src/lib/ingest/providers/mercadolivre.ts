@@ -3,7 +3,7 @@ import type { PriceProvider } from "../types";
 let cached: { token: string; exp: number } | null = null;
 
 /** Token de aplicativo (client_credentials). Crie o app em developers.mercadolivre.com.br e preencha ML_CLIENT_ID/ML_CLIENT_SECRET. */
-async function getToken(): Promise<string | null> {
+export async function getToken(): Promise<string | null> {
   const id = process.env.ML_CLIENT_ID, secret = process.env.ML_CLIENT_SECRET;
   if (!id || !secret) return null;
   if (cached && cached.exp > Date.now() + 60_000) return cached.token;

@@ -101,6 +101,32 @@ O histórico de preços começa no dia do primeiro cadastro e cresce a cada dia 
 
 ---
 
+## PARTE 3B · Puxar produtos automaticamente (rodando no seu computador, sem Vercel)
+
+Isto popula o banco sozinho a partir do **Mercado Livre**. Para as outras lojas ainda é preciso cadastrar à mão (Parte 3).
+
+**Preparação (uma vez):**
+1. Instale o Node.js (versão LTS) em https://nodejs.org.
+2. Baixe o projeto: no GitHub, botão verde **Code → Download ZIP** (branch `claude/nextjs-supabase-promocoes-5808de`), descompacte e abra a pasta no Terminal (no Windows: botão direito na pasta → *Abrir no Terminal*).
+3. Rode: `npm install`
+4. Crie o arquivo `.env.local` na pasta (copie o `.env.example` e renomeie) e preencha:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API)
+   - `ML_CLIENT_ID` e `ML_CLIENT_SECRET`: entre em https://developers.mercadolivre.com.br com a sua conta do Mercado Livre → *Minhas aplicações* → *Criar aplicação* → copie o ID e a chave secreta.
+5. No Supabase, confirme que as duas migrações da Parte 1.1 já foram executadas.
+
+**Rodar:**
+1. **Teste sem gravar nada:** `npm run importar -- --simular`. Mostra uma lista de produtos com preço. Se aparecer erro, copie e me envie.
+2. **Gravar no banco:** `npm run importar`.
+3. **Ver o site:** `npm run dev` e abra http://localhost:3000.
+
+**O que ele busca:** as palavras do arquivo `catalogo.config.json` (consoles, portáteis, controles). Para acompanhar outro produto, adicione uma linha ali com o termo, a categoria e o preço mínimo (o preço mínimo evita capinhas e peças aparecerem como se fossem o console).
+
+**Todo dia:** rode `npm run atualizar` (atualiza os preços e grava o histórico de hoje). Sem a Vercel não existe agendamento automático; se quiser, dá para agendar esse comando no seu computador, mas ele precisa estar ligado. Esse é o principal motivo para colocar na Vercel depois.
+
+**Jogos (Eneba):** se o programa de afiliados da Eneba fornecer um arquivo de ofertas, coloque o endereço dele em `ENEBA_FEED_URL` e rode `npm run importar:jogos`.
+
+---
+
 ## PARTE 4 · Apoiadores (membros do YouTube)
 
 A forma mais simples para começar é **manual**:
