@@ -16,7 +16,7 @@ Faça na ordem. Cada parte termina com um teste simples para você saber se deu 
 |---|---|---|
 | Mercado Livre | **Sim**, pela API oficial (precisa criar um "aplicativo" no site de desenvolvedores) | No painel de afiliados deles |
 | Amazon | **Ainda não**: a API deles exige conta aprovada e eu não implementei. Por enquanto: preço digitado | Amazon Associates |
-| Shopee | **Ainda não**: preço digitado | Painel de afiliados da Shopee |
+| Shopee | **Sim**, pela API de afiliados (busca + preço + link de afiliado prontos) | Vem da própria API |
 | Casas Bahia | **Ainda não**: preço digitado | Pela rede de afiliados em que o programa deles estiver (confirme no painel da rede) |
 | Eneba | **Sim**, se o programa de afiliados fornecer o feed (arquivo de ofertas) | Painel de afiliados da Eneba |
 
@@ -77,7 +77,7 @@ Para **cada loja** você precisa se cadastrar no programa de afiliados dela e se
    - **Modelo de link**: quando a rede gera um link próprio que "embrulha" o endereço do produto (é o caso das redes como Awin). Cole o modelo e troque o endereço do produto por `{url_encoded}`. Se quiser também rastrear qual apoiador clicou, use `{subid}` no campo que a rede reservar para isso.
 3. Clique em **Salvar**.
 
-Se o painel da loja só gera um link pronto por produto (acontece no Mercado Livre e na Shopee), escolha uma destas saídas:
+Se o painel da loja só gera um link pronto por produto (acontece no Mercado Livre; a Shopee já vem pela API), escolha uma destas saídas:
 - pergunte no próprio painel se existe um parâmetro/código fixo para acrescentar aos links (se existir, use **Parâmetros**); ou
 - me peça para adicionar o campo "link manual por produto" no painel (o código já suporta; falta só a tela).
 
@@ -103,7 +103,7 @@ O histórico de preços começa no dia do primeiro cadastro e cresce a cada dia 
 
 ## PARTE 3B · Puxar produtos automaticamente (rodando no seu computador, sem Vercel)
 
-Isto popula o banco sozinho a partir do **Mercado Livre**. Para as outras lojas ainda é preciso cadastrar à mão (Parte 3).
+Isto popula o banco sozinho a partir do **Mercado Livre** e da **Shopee** (cada uma só roda se você preencheu as chaves dela). Para as outras lojas ainda é preciso cadastrar à mão (Parte 3).
 
 **Preparação (uma vez):**
 1. Instale o Node.js (versão LTS) em https://nodejs.org.
@@ -113,6 +113,12 @@ Isto popula o banco sozinho a partir do **Mercado Livre**. Para as outras lojas 
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API)
    - `ML_CLIENT_ID` e `ML_CLIENT_SECRET`: entre em https://developers.mercadolivre.com.br com a sua conta do Mercado Livre → *Minhas aplicações* → *Criar aplicação* → copie o ID e a chave secreta.
 5. No Supabase, confirme que as duas migrações da Parte 1.1 já foram executadas.
+
+**Shopee (você já tem conta de afiliado aprovada):**
+1. No painel de afiliados da Shopee, procure a área de **API / Open API** (nome pode variar) e gere o **AppID** e o **Secret**.
+2. Coloque no `.env.local`: `SHOPEE_APP_ID=...` e `SHOPEE_SECRET=...`.
+3. O link de afiliado já vem pronto da própria Shopee (campo `offerLink`) e é guardado junto com a oferta. Não precisa configurar nada em "Seu código de afiliado" para a Shopee.
+4. Se aparecer erro dizendo que um campo não existe, rode `npm run shopee:schema` e me mande o resultado.
 
 **Rodar:**
 1. **Teste sem gravar nada:** `npm run importar -- --simular`. Mostra uma lista de produtos com preço. Se aparecer erro, copie e me envie.

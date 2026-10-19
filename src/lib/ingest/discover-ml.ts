@@ -6,6 +6,7 @@ export type Candidate = {
   externalId: string; // MLB...
   url: string;
   imageUrl: string | null;
+  affiliateUrl?: string; // link de afiliado pronto (ex.: Shopee devolve offerLink)
 };
 
 type SearchItem = {

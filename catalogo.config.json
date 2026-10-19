@@ -1,12 +1,78 @@
 {
   "mercadolivre": [
-    { "termo": "Nintendo Switch 2 console", "categoria": "Console · Nintendo", "precoMinimo": 1500, "limite": 3 },
-    { "termo": "Nintendo Switch OLED", "categoria": "Console · Nintendo", "precoMinimo": 1500, "limite": 3 },
-    { "termo": "PlayStation 5 console", "categoria": "Console · Sony", "precoMinimo": 2000, "limite": 3 },
-    { "termo": "Xbox Series S", "categoria": "Console · Microsoft", "precoMinimo": 1500, "limite": 3 },
-    { "termo": "Steam Deck", "categoria": "Portátil · Valve", "precoMinimo": 2500, "limite": 3 },
-    { "termo": "ROG Ally", "categoria": "Portátil · ASUS", "precoMinimo": 2500, "limite": 3 },
-    { "termo": "Controle Pro Nintendo Switch", "categoria": "Acessório · Nintendo", "precoMinimo": 200, "limite": 3 },
-    { "termo": "Controle DualSense PS5", "categoria": "Acessório · Sony", "precoMinimo": 200, "limite": 3 }
+    {
+      "termo": "Nintendo Switch 2 console",
+      "categoria": "Console · Nintendo",
+      "precoMinimo": 1500,
+      "limite": 3
+    },
+    {
+      "termo": "Nintendo Switch OLED",
+      "categoria": "Console · Nintendo",
+      "precoMinimo": 1500,
+      "limite": 3
+    },
+    {
+      "termo": "PlayStation 5 console",
+      "categoria": "Console · Sony",
+      "precoMinimo": 2000,
+      "limite": 3
+    },
+    {
+      "termo": "Xbox Series S",
+      "categoria": "Console · Microsoft",
+      "precoMinimo": 1500,
+      "limite": 3
+    },
+    {
+      "termo": "Steam Deck",
+      "categoria": "Portátil · Valve",
+      "precoMinimo": 2500,
+      "limite": 3
+    },
+    {
+      "termo": "ROG Ally",
+      "categoria": "Portátil · ASUS",
+      "precoMinimo": 2500,
+      "limite": 3
+    },
+    {
+      "termo": "Controle Pro Nintendo Switch",
+      "categoria": "Acessório · Nintendo",
+      "precoMinimo": 200,
+      "limite": 3
+    },
+    {
+      "termo": "Controle DualSense PS5",
+      "categoria": "Acessório · Sony",
+      "precoMinimo": 200,
+      "limite": 3
+    }
+  ],
+  "shopee": [
+    {
+      "termo": "Nintendo Switch OLED",
+      "categoria": "Console · Nintendo",
+      "precoMinimo": 1500,
+      "limite": 3
+    },
+    {
+      "termo": "Controle Pro Nintendo Switch",
+      "categoria": "Acessório · Nintendo",
+      "precoMinimo": 200,
+      "limite": 3
+    },
+    {
+      "termo": "Steam Deck",
+      "categoria": "Portátil · Valve",
+      "precoMinimo": 2500,
+      "limite": 3
+    },
+    {
+      "termo": "Anbernic console retro portátil",
+      "categoria": "Retrô · Anbernic",
+      "precoMinimo": 200,
+      "limite": 3
+    }
   ]
 }

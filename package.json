@@ -10,7 +10,8 @@
     "test": "vitest run",
     "importar": "tsx --env-file=.env.local scripts/importar.ts",
     "atualizar": "tsx --env-file=.env.local scripts/atualizar-precos.ts",
-    "importar:jogos": "tsx --env-file=.env.local scripts/importar-jogos.ts"
+    "importar:jogos": "tsx --env-file=.env.local scripts/importar-jogos.ts",
+    "shopee:schema": "tsx --env-file=.env.local scripts/shopee-schema.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

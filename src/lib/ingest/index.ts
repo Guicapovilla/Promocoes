@@ -2,9 +2,10 @@ import { createAdminClient } from "../supabase/admin";
 import { amazon } from "./providers/amazon";
 import { feed } from "./providers/feed";
 import { mercadoLivre } from "./providers/mercadolivre";
+import { shopee } from "./shopee";
 import type { OfferRow, PriceProvider } from "./types";
 
-const PROVIDERS: Record<string, PriceProvider> = { mercadolivre: mercadoLivre, amazon, feed };
+const PROVIDERS: Record<string, PriceProvider> = { mercadolivre: mercadoLivre, shopee, amazon, feed };
 
 /** Coleta preços de todas as ofertas com `source` automático, grava em `offers` e fecha o dia em `price_history`. */
 export async function ingestPrices() {
